@@ -16,20 +16,14 @@ data:
         HTTP_Listen   0.0.0.0
         HTTP_Port     2020
 
-    # Collect all Kubernetes logs
+    # Collect Kubernetes logs
     [INPUT]
         Name          tail
-        Path          /var/log/containers/*.log
+        Path          /var/log/containers/springboot*.log
         Parser        docker
         Tag           kube.*
         Mem_Buf_Limit 5MB
         Skip_Long_Lines On
-
-    # Filter only logs from Spring Boot container
-    [FILTER]
-        Name          grep
-        Match         kube.*
-        Regex         log ^\d{4}-\d{2}-\d{2}.*(INFO|ERROR|WARN)   # Matches Spring Boot log format
 
     # Process Kubernetes logs
     [FILTER]
@@ -39,16 +33,6 @@ data:
         Keep_Log      Off
         K8S-Logging.Parser  On
         K8S-Logging.Exclude On
-
-    # Output all Kubernetes logs to 'klogs'
-    [OUTPUT]
-        Name          es
-        Match         kube.*
-        Host          ${FLUENT_ELASTICSEARCH_HOST}
-        Port          ${FLUENT_ELASTICSEARCH_PORT}
-        Logstash_Format On
-        Logstash_Prefix klogs
-        Retry_Limit   False
 
     # Output only Spring Boot logs to 'springbootlogs'
     [OUTPUT]
