@@ -10,12 +10,13 @@ data:
     [SERVICE]
         Flush         1
         Daemon        Off
-        Log_Level     info
+        Log_Level     debug
         Parsers_File  /fluent-bit/etc/parsers.conf
         HTTP_Server   On
         HTTP_Listen   0.0.0.0
         HTTP_Port     2020
 
+    # Collect all Kubernetes logs
     [INPUT]
         Name          tail
         Path          /var/log/containers/*.log
@@ -24,6 +25,13 @@ data:
         Mem_Buf_Limit 5MB
         Skip_Long_Lines On
 
+    # Filter only logs from Spring Boot container
+    [FILTER]
+        Name          grep
+        Match         kube.*
+        Regex         log ^\d{4}-\d{2}-\d{2}.*(INFO|ERROR|WARN)   # Matches Spring Boot log format
+
+    # Process Kubernetes logs
     [FILTER]
         Name          kubernetes
         Match         kube.*
@@ -32,10 +40,22 @@ data:
         K8S-Logging.Parser  On
         K8S-Logging.Exclude On
 
+    # Output all Kubernetes logs to 'klogs'
     [OUTPUT]
         Name          es
         Match         kube.*
         Host          ${FLUENT_ELASTICSEARCH_HOST}
         Port          ${FLUENT_ELASTICSEARCH_PORT}
         Logstash_Format On
+        Logstash_Prefix klogs
+        Retry_Limit   False
+
+    # Output only Spring Boot logs to 'springbootlogs'
+    [OUTPUT]
+        Name          es
+        Match         kube.*
+        Host          ${FLUENT_ELASTICSEARCH_HOST}
+        Port          ${FLUENT_ELASTICSEARCH_PORT}
+        Logstash_Format On
+        Logstash_Prefix springbootlogs
         Retry_Limit   False
