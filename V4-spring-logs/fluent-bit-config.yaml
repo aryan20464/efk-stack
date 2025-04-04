@@ -1,0 +1,178 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fluent-bit-config
+  namespace: kube-logging
+  labels:
+    app: fluent-bit
+data:
+  fluent-bit.conf: |
+    [SERVICE]
+        Flush         1
+        Daemon        Off
+        Log_Level     debug
+        Parsers_File  /fluent-bit/etc/parsers.conf
+        HTTP_Server   On
+        HTTP_Listen   0.0.0.0
+        HTTP_Port     2020
+
+    # Collect Spring Boot logs
+    [INPUT]
+        Name          tail
+        Path          /var/log/containers/springboot*.log
+        Parser        docker
+        Tag           springboot.*
+        Mem_Buf_Limit 5MB
+        Skip_Long_Lines On
+
+    # Collect Fluent Bit logs
+    [INPUT]
+        Name          tail
+        Path          /var/log/containers/fluent-bit*.log
+        Parser        docker
+        Tag           fluent-bit.*
+        Mem_Buf_Limit 5MB
+        Skip_Long_Lines On
+
+    # Collect Elasticsearch logs
+    [INPUT]
+        Name          tail
+        Path          /var/log/containers/es-cluster*.log
+        Parser        docker
+        Tag           elasticsearch.*
+        Mem_Buf_Limit 5MB
+        Skip_Long_Lines On
+
+    # Collect Kubernetes API Server logs
+    [INPUT]
+        Name          tail
+        Path          /var/log/containers/kube-apiserver*.log
+        Parser        docker
+        Tag           kube-apiserver.*
+        Mem_Buf_Limit 5MB
+        Skip_Long_Lines On
+
+    # Collect Kubernetes Controller logs
+    [INPUT]
+        Name          tail
+        Path          /var/log/containers/kube-controller-manager*.log
+        Parser        docker
+        Tag           kube-controller.*
+        Mem_Buf_Limit 5MB
+        Skip_Long_Lines On
+
+    # Collect Kubernetes Scheduler logs
+    [INPUT]
+        Name          tail
+        Path          /var/log/containers/kube-scheduler*.log
+        Parser        docker
+        Tag           kube-scheduler.*
+        Mem_Buf_Limit 5MB
+        Skip_Long_Lines On
+
+    # Collect Kubernetes Proxy logs
+    [INPUT]
+        Name          tail
+        Path          /var/log/containers/kube-proxy*.log
+        Parser        docker
+        Tag           kube-proxy.*
+        Mem_Buf_Limit 5MB
+        Skip_Long_Lines On
+
+    # Collect Kibana logs
+    [INPUT]
+        Name          tail
+        Path          /var/log/containers/kibana*.log
+        Parser        docker
+        Tag           kibana.*
+        Mem_Buf_Limit 5MB
+        Skip_Long_Lines On
+
+    # Process Kubernetes logs
+    [FILTER]
+        Name          kubernetes
+        Match         *
+        Merge_Log     On
+        Keep_Log      Off
+        K8S-Logging.Parser  On
+        K8S-Logging.Exclude On
+
+    # Output Spring Boot logs to 'springbootlogs'
+    [OUTPUT]
+        Name          es
+        Match         springboot.*
+        Host          ${FLUENT_ELASTICSEARCH_HOST}
+        Port          ${FLUENT_ELASTICSEARCH_PORT}
+        Logstash_Format On
+        Logstash_Prefix springbootlogs
+        Retry_Limit   False
+
+    # Output Fluent Bit logs to 'fluentbitlogs'
+    [OUTPUT]
+        Name          es
+        Match         fluent-bit.*
+        Host          ${FLUENT_ELASTICSEARCH_HOST}
+        Port          ${FLUENT_ELASTICSEARCH_PORT}
+        Logstash_Format On
+        Logstash_Prefix fluentbitlogs
+        Retry_Limit   False
+
+    # Output Elasticsearch logs to 'elasticsearchlogs'
+    [OUTPUT]
+        Name          es
+        Match         elasticsearch.*
+        Host          ${FLUENT_ELASTICSEARCH_HOST}
+        Port          ${FLUENT_ELASTICSEARCH_PORT}
+        Logstash_Format On
+        Logstash_Prefix elasticsearchlogs
+        Retry_Limit   False
+
+    # Output Kubernetes API logs to 'kube-apiserver-logs'
+    [OUTPUT]
+        Name          es
+        Match         kube-apiserver.*
+        Host          ${FLUENT_ELASTICSEARCH_HOST}
+        Port          ${FLUENT_ELASTICSEARCH_PORT}
+        Logstash_Format On
+        Logstash_Prefix kube-apiserver-logs
+        Retry_Limit   False
+
+    # Output Kubernetes Controller logs to 'kube-controller-logs'
+    [OUTPUT]
+        Name          es
+        Match         kube-controller.*
+        Host          ${FLUENT_ELASTICSEARCH_HOST}
+        Port          ${FLUENT_ELASTICSEARCH_PORT}
+        Logstash_Format On
+        Logstash_Prefix kube-controller-logs
+        Retry_Limit   False
+
+    # Output Kubernetes Scheduler logs to 'kube-scheduler-logs'
+    [OUTPUT]
+        Name          es
+        Match         kube-scheduler.*
+        Host          ${FLUENT_ELASTICSEARCH_HOST}
+        Port          ${FLUENT_ELASTICSEARCH_PORT}
+        Logstash_Format On
+        Logstash_Prefix kube-scheduler-logs
+        Retry_Limit   False
+
+    # Output Kubernetes Proxy logs to 'kube-proxy-logs'
+    [OUTPUT]
+        Name          es
+        Match         kube-proxy.*
+        Host          ${FLUENT_ELASTICSEARCH_HOST}
+        Port          ${FLUENT_ELASTICSEARCH_PORT}
+        Logstash_Format On
+        Logstash_Prefix kube-proxy-logs
+        Retry_Limit   False
+
+    # Output Kibana logs to 'kibanalog'
+    [OUTPUT]
+        Name          es
+        Match         kibana.*
+        Host          ${FLUENT_ELASTICSEARCH_HOST}
+        Port          ${FLUENT_ELASTICSEARCH_PORT}
+        Logstash_Format On
+        Logstash_Prefix kibanalog
+        Retry_Limit   False
